@@ -1,0 +1,11 @@
+/* === Blanket third-party widget / chat / online-status hide === */
+iframe[src*='tawk'],iframe[src*='crisp'],iframe[src*='intercom'],iframe[src*='drift'],iframe[src*='zendesk'],iframe[src*='livechat'],iframe[src*='jivosite'],iframe[src*='olark'],
+iframe[id*='tawk'],iframe[id*='chat'],iframe[id*='crisp'],iframe[id*='intercom'],iframe[id*='drift'],iframe[id*='zendesk'],iframe[id*='livechat'],
+iframe[title*='chat'],iframe[title*='Chat'],iframe[title*='support'],iframe[name*='tawk'],iframe[name*='chat'],
+[class*='tawk-'],[class*='crisp-'],[class*='intercom-'],[class*='livechat'],[class*='jivo'],[class*='olark'],[class*='drift-'],[class*='zendesk'],[class*='helpwidget'],[class*='chat-widget'],[class*='chatbox'],[class*='chat-button'],[class*='online-badge'],[class*='online-status'],[class*='support-widget'],
+[id*='tawk-'],[id*='crisp-'],[id*='livechat'],[id*='jivo'],[id*='drift'],[id*='intercom'],[id*='helpwidget'],[id*='chat-widget'],[id*='online-badge'],[id*='online-status'],[id*='support-widget'],
+iframe[style*='z-index: 9999'],iframe[style*='z-index:9999'],iframe[style*='position: fixed'],iframe[style*='position:fixed'],
+iframe[src='about:blank'],iframe[src=''],iframe:not([src]),iframe:not([src*='://']):not([src^='/']),
+body>div:has(>iframe[src='about:blank']),body>div:has(>iframe[src='']),
+body>div[id]:not([id*='page']):not([id*='content']):not([id*='app']):empty,
+body>div:not([class]):not([id]):empty {display:none !important; visibility:hidden !important; height:0 !important; width:0 !important; pointer-events:none !important;}
