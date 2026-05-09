@@ -52,10 +52,10 @@ SWITCH_SCRIPT = "/usr/local/bin/yala-switch"
 
 # 4 source slots — first 2 active, rest reserved for future expansion.
 SOURCES = [
-    {"id": "yshoot",   "label": "Yalla Shoot",  "host": "www.yshootlive.com"},
-    {"id": "korasimo", "label": "Kora Simo",    "host": "www.korasimo.com"},
-    {"id": "slot3",    "label": "خانة 3",        "host": None},
-    {"id": "slot4",    "label": "خانة 4",        "host": None},
+    {"id": "syrlive", "label": "Syria Live", "host": "d.syrlive.com"},
+    {"id": "slot2",   "label": "خانة 2", "host": None},
+    {"id": "slot3",   "label": "خانة 3", "host": None},
+    {"id": "slot4",   "label": "خانة 4", "host": None},
 ]
 
 BOT_START_TS = time.time()

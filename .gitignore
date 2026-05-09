@@ -1,8 +1,44 @@
+# Python
 .env
 __pycache__/
 *.pyc
 venv/
+
+# Claude/IDE
 .claude/
+
+# Logs / temp
 *.log
 *.tmp
 *.bak
+
+# Windows user profile junk (this dir got polluted)
+.gradle/
+.dotnet/
+.copilot/
+.bash_history
+ntuser.ini
+NTUSER.DAT*
+Application Data/
+Cookies/
+Contacts/
+Desktop/
+Documents/
+Downloads/
+Favorites/
+Links/
+Local Settings/
+Music/
+My Documents/
+NetHood/
+OneDrive/
+Pictures/
+PrintHood/
+Recent/
+Saved Games/
+SendTo/
+Start Menu/
+Templates/
+Videos/
+ansel/
+iTubeGo/
