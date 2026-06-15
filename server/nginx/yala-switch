@@ -1,0 +1,34 @@
+#!/bin/bash
+# Switch the live yala.zaboni.store nginx config to a chosen source.
+# Usage: yala-switch <source-id>
+set -euo pipefail
+TARGET="${1:-}"
+NGX_DIR=/etc/nginx/sites-available
+ACTIVE="$NGX_DIR/yala.zaboni.store"
+STATE=/var/lib/yala-source
+
+case "$TARGET" in
+  syrlive|slot2|slot3|slot4) ;;
+  *) echo "invalid source: $TARGET" >&2; exit 2 ;;
+esac
+
+SRC="$NGX_DIR/yala.zaboni.store.$TARGET"
+if [ ! -f "$SRC" ]; then
+  echo "no config for source '$TARGET' (file missing: $SRC)" >&2
+  exit 3
+fi
+
+# Snapshot current active in case rollback needed
+cp "$ACTIVE" "$ACTIVE.prev"
+cp "$SRC" "$ACTIVE"
+
+if ! nginx -t >/dev/null 2>&1; then
+  cp "$ACTIVE.prev" "$ACTIVE"
+  echo "nginx config invalid; rolled back" >&2
+  exit 4
+fi
+
+rm -rf /var/cache/nginx/yala/* 2>/dev/null || true
+systemctl reload nginx
+echo "$TARGET" > "$STATE"
+echo "switched to $TARGET"

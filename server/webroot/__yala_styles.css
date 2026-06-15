@@ -1,0 +1,55 @@
+/* === Blanket third-party widget / chat / online-status hide === */
+iframe[src*='tawk'],iframe[src*='crisp'],iframe[src*='intercom'],iframe[src*='drift'],iframe[src*='zendesk'],iframe[src*='livechat'],iframe[src*='jivosite'],iframe[src*='olark'],
+iframe[id*='tawk'],iframe[id*='chat'],iframe[id*='crisp'],iframe[id*='intercom'],iframe[id*='drift'],iframe[id*='zendesk'],iframe[id*='livechat'],
+iframe[title*='chat'],iframe[title*='Chat'],iframe[title*='support'],iframe[name*='tawk'],iframe[name*='chat'],
+[class*='tawk-'],[class*='crisp-'],[class*='intercom-'],[class*='livechat'],[class*='jivo'],[class*='olark'],[class*='drift-'],[class*='zendesk'],[class*='helpwidget'],[class*='chat-widget'],[class*='chatbox'],[class*='chat-button'],[class*='online-badge'],[class*='online-status'],[class*='support-widget'],
+[id*='tawk-'],[id*='crisp-'],[id*='livechat'],[id*='jivo'],[id*='drift'],[id*='intercom'],[id*='helpwidget'],[id*='chat-widget'],[id*='online-badge'],[id*='online-status'],[id*='support-widget'],
+iframe[style*='z-index: 9999'],iframe[style*='z-index:9999'],iframe[style*='position: fixed'],iframe[style*='position:fixed'],
+iframe[src='about:blank'],iframe[src=''],iframe:not([src]),iframe:not([src*='://']):not([src^='/']),
+body>div:has(>iframe[src='about:blank']),body>div:has(>iframe[src='']),
+body>div[id]:not([id*='page']):not([id*='content']):not([id*='app']):empty,
+body>div:not([class]):not([id]):empty {display:none !important; visibility:hidden !important; height:0 !important; width:0 !important; pointer-events:none !important;}
+
+/* ===== slot4 (Yalla Shoott / yalla-shoott.club) ===== */
+/* Day tabs colors */
+.tab.AF_Filters .tablinks:nth-of-type(1){background:#0d9488 !important;color:#fff !important;border-color:#0d9488 !important}
+.tab.AF_Filters .tablinks:nth-of-type(2){background:#dc2626 !important;color:#fff !important;border-color:#dc2626 !important}
+.tab.AF_Filters .tablinks:nth-of-type(3){background:#eab308 !important;color:#1a1a1a !important;border-color:#eab308 !important}
+
+/* Hide hero / nav / app banners / marketing blocks below matches */
+.fp-hero-cta,
+nav.main-nav,
+.menu-toggle,
+.albayalla-e3lan,
+.e3lan-thumb_start,
+[class*='e3lan'],
+#pwaBanner,
+.pwa-banner,
+[class*='betting'],
+[class*='prediction'],
+[class*='telegram-cta'],
+.fp-features,
+.fp-features-grid,
+section[class*='features'],
+section[class*='championships'],
+section[class*='about'],
+.fp-championships,
+.fp-about,
+.site-main > section:not(.fp-matches):not(:has(.AlbaSportFixture)) {display:none !important}
+
+/* Footer: hide all original content, keep only our copyright via ::after */
+footer.jchild-site-footer .container,
+footer.jchild-site-footer p,
+footer.jchild-site-footer .footer-seo,
+footer.jchild-site-footer ul,
+footer.jchild-site-footer h2,
+footer.jchild-site-footer h3,
+footer.jchild-site-footer .footer-bottom,
+footer.jchild-site-footer .copyright,
+footer.jchild-site-footer .social-icons {display:none !important}
+footer.jchild-site-footer {padding:18px 12px !important; text-align:center !important; background:#0a0e17 !important; min-height:auto !important}
+footer.jchild-site-footer::after {content:'جميع الحقوق محفوظة - مصطفى العبودي'; display:block; font-size:14px; font-weight:700; color:#fff !important; direction:rtl; letter-spacing:0.3px}
+
+/* Dark mode background */
+html.slot4-dark, body.slot4-dark, body.home {background:#0a0e17 !important; color:#e6e8ee}
+.AlbaSportFixture {background:transparent !important}

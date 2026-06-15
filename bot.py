@@ -194,7 +194,7 @@ def webapp_url_with_source() -> str:
     string. iOS Telegram caches WebApp pages by URL — including query string — so
     `?src=korasimo` and `?src=yshoot` are different URLs and trigger fresh fetches
     after a source switch. The src param is just for the cache key; nginx ignores it."""
-    return f"{WEBAPP_URL}?src={read_active_source()}"
+    return f"{WEBAPP_URL}?src={read_active_source()}&_v={int(time.time())}"
 
 
 def build_user_keyboard() -> InlineKeyboardMarkup:

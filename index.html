@@ -2,26 +2,39 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
-<title>Syria Live</title>
-<link rel="preconnect" href="https://yala.zaboni.store">
-<link rel="dns-prefetch" href="https://yala.zaboni.store">
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1f">
+<title>Trab TV</title>
+<!--
+  NOTE: The live Mini App is the reverse-proxy gateway at https://yala.zaboni.store/
+  (served by nginx → showcase.html portal). The bot's WEBAPP_URL points there directly.
+
+  This page only exists as a safety redirect for any old GitHub Pages link.
+  Do NOT reintroduce an <iframe> here: iframing the site breaks inside iOS Telegram
+  (top-level navigation / fullscreen video suspension). Always reverse-proxy instead.
+-->
+<meta http-equiv="refresh" content="0; url=https://yala.zaboni.store/">
+<link rel="canonical" href="https://yala.zaboni.store/">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  (function () {
+    var DEST = "https://yala.zaboni.store/";
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) {
+      try { tg.ready(); } catch (_) {}
+      try { tg.expand(); } catch (_) {}
+    }
+    location.replace(DEST);
+  })();
+</script>
+<style>
+  html,body{margin:0;height:100%;background:#0a0f1f;color:#94a3b8;
+    font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+    display:flex;align-items:center;justify-content:center}
+  a{color:#06d6a0}
+</style>
 </head>
 <body>
-<div id="loader" role="status" aria-live="polite">
-    <div class="ring"></div>
-    <div id="loader-text">جاري التحميل…</div>
-    <button id="retry" type="button" hidden>إعادة المحاولة</button>
-</div>
-<iframe
-    id="mainFrame"
-    src="https://yala.zaboni.store/"
-    referrerpolicy="no-referrer-when-downgrade"
-    allow="autoplay; fullscreen; picture-in-picture"
-    title="Syria Live"></iframe>
-<script src="script.js" defer></script>
+  <p>جارٍ التحويل… إذا لم يتم، <a href="https://yala.zaboni.store/">اضغط هنا</a>.</p>
 </body>
 </html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تشخيص</title>
+<style>
+body{font-family:monospace,sans-serif;background:#0a0e27;color:#fff;padding:20px;font-size:14px;line-height:1.6}
+h2{color:#00ff88;margin-top:20px}
+.ok{color:#00ff88}.bad{color:#ff4444}.info{color:#88ddff}
+pre{background:#1a1f3a;padding:10px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+button{background:#b91c1c;color:#fff;border:0;padding:12px 24px;border-radius:6px;font-size:16px;margin:8px 0;cursor:pointer;display:block;width:100%}
+</style>
+</head>
+<body>
+<h1>تشخيص يلا زبوني</h1>
+<h2>1. معلومات الجهاز</h2>
+<pre id="info"></pre>
+<h2>2. الواجهة الرئيسية</h2>
+<button onclick="testHome()">اختبر</button>
+<pre id="r1"></pre>
+<h2>3. صفحة المباراة (zinahaberi)</h2>
+<button onclick="testZH()">اختبر</button>
+<pre id="r2"></pre>
+<h2>4. مشغل egy-dead</h2>
+<button onclick="testED()">اختبر</button>
+<pre id="r3"></pre>
+<script>
+document.getElementById("info").textContent =
+"UA: "+navigator.userAgent+"\n"+
+"Platform: "+navigator.platform+"\n"+
+"Cookies: "+navigator.cookieEnabled+"\n"+
+"Online: "+navigator.onLine+"\n"+
+"Screen: "+screen.width+"x"+screen.height+"\n"+
+"DPR: "+window.devicePixelRatio+"\n"+
+"Time: "+new Date().toString();
+
+function show(id, label, ok, msg){
+  document.getElementById(id).innerHTML += (ok?"<span class=ok>✓ ":"<span class=bad>✗ ")+label+": </span>"+msg+"\n";
+}
+function testHome(){
+  document.getElementById("r1").textContent="";
+  fetch("/?_diag="+Date.now(),{cache:"no-store"}).then(r=>{
+    show("r1","HTTP",r.ok,r.status);
+    return r.text();
+  }).then(t=>{
+    show("r1","Size",true,t.length+" bytes");
+    show("r1","Has Alaboodi TV",t.indexOf("Alaboodi TV")>=0,t.indexOf("Alaboodi TV")>=0?"yes":"no");
+    show("r1","Has live match",t.indexOf("AY_Match live")>=0,t.indexOf("AY_Match live")>=0?"yes":"no");
+    show("r1","Has zinahaberi link",t.indexOf("zinahaberi")>=0,t.indexOf("zinahaberi")>=0?"yes":"no");
+    var m = t.match(/zinahaberi[^"]*/g);
+    if(m) show("r1","First zinahaberi URL",true,m[0].slice(0,80));
+  }).catch(e=>show("r1","FAIL",false,e.message));
+}
+function testZH(){
+  document.getElementById("r2").textContent="";
+  var u="https://www.zinahaberi.online/da.html?d="+Date.now();
+  fetch(u,{cache:"no-store",mode:"no-cors"}).then(r=>{
+    show("r2","Type",true,r.type);
+    show("r2","Status",true,r.status||"opaque");
+  }).catch(e=>show("r2","FAIL",false,e.message));
+  // Also test img loading from same domain
+  var img = new Image();
+  img.onload = ()=>show("r2","img-test","loaded","ok");
+  img.onerror = ()=>show("r2","img-test",false,"failed");
+  img.src = "https://www.zinahaberi.online/favicon.ico?d="+Date.now();
+}
+function testED(){
+  document.getElementById("r3").textContent="";
+  var u="https://eyj0exaioijkv1qilcjhbgcioijiuzi1nij99ds.egy-dead.net/playerv5.php?match=4469207&key=c0ae1abba6eebd7e6cc5b88b1d2B71547&d="+Date.now();
+  fetch(u,{cache:"no-store",mode:"no-cors"}).then(r=>{
+    show("r3","Type",true,r.type);
+    show("r3","Status",true,r.status||"opaque");
+  }).catch(e=>show("r3","FAIL",false,e.message));
+}
+</script>
+</body>
+</html>
