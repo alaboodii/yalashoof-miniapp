@@ -46,16 +46,16 @@ DATA_DIR = Path(__file__).resolve().parent
 USERS_FILE = DATA_DIR / "users.json"
 CHANNELS_FILE = DATA_DIR / "forced_channels.json"
 SETTINGS_FILE = DATA_DIR / "settings.json"
-SOURCE_STATE_FILE = Path("/var/lib/yala-source")
-NGINX_CONFIG_DIR = Path("/etc/nginx/sites-available")
-SWITCH_SCRIPT = "/usr/local/bin/yala-switch"
 
-# 4 source slots — first 2 active, rest reserved for future expansion.
+# The 4 sources the gateway portal (showcase.html) exposes, each reverse-proxied
+# under /s/<id>/ at the same time. Display-only: the portal routes the user. The bot
+# does NOT switch a single "active" source — doing so via yala-switch would overwrite
+# the live multi-source nginx config. See server/nginx/yala.zaboni.store.conf.
 SOURCES = [
-    {"id": "syrlive", "label": "Syria Live", "host": "d.syrlive.com"},
-    {"id": "slot2",   "label": "خانة 2", "host": None},
-    {"id": "slot3",   "label": "خانة 3", "host": None},
-    {"id": "slot4",   "label": "خانة 4", "host": None},
+    {"id": "koora4live", "label": "المصدر الأول — Koora4Live", "host": "gonutradeal.com",  "path": "/s/koora4live/"},
+    {"id": "kooracity",  "label": "المصدر الثاني — Koora City", "host": "koooracity.io",    "path": "/s/kooracity/"},
+    {"id": "livescore",  "label": "المصدر الثالث — Live Score", "host": "www.freekora.com", "path": "/s/livescore/"},
+    {"id": "syrlive",    "label": "المصدر الرابع — Syria Live", "host": "d.syrlive.com",    "path": "/s/syrlive/"},
 ]
 
 BOT_START_TS = time.time()
@@ -116,19 +116,8 @@ def save_settings(s: dict) -> None:
     _save_json(SETTINGS_FILE, s)
 
 
-def read_active_source() -> str:
-    try:
-        return SOURCE_STATE_FILE.read_text(encoding="utf-8").strip() or "yshoot"
-    except Exception:
-        return "yshoot"
-
-
 def source_label(sid: str) -> str:
     return next((s["label"] for s in SOURCES if s["id"] == sid), sid)
-
-
-def source_config_exists(sid: str) -> bool:
-    return (NGINX_CONFIG_DIR / f"yala.zaboni.store.{sid}").exists()
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -190,11 +179,9 @@ def build_welcome() -> str:
 
 
 def webapp_url_with_source() -> str:
-    """Build a cache-busted WebApp URL that ALSO encodes the active source as a query
-    string. iOS Telegram caches WebApp pages by URL — including query string — so
-    `?src=korasimo` and `?src=yshoot` are different URLs and trigger fresh fetches
-    after a source switch. The src param is just for the cache key; nginx ignores it."""
-    return f"{WEBAPP_URL}?src={read_active_source()}&_v={int(time.time())}"
+    """Cache-busted WebApp URL. iOS Telegram caches WebApp pages by full URL, so a
+    changing `_v` param forces a fresh fetch each time the button is rebuilt."""
+    return f"{WEBAPP_URL}?_v={int(time.time())}"
 
 
 def build_user_keyboard() -> InlineKeyboardMarkup:
@@ -246,8 +233,6 @@ def keyboard_for(user_id: int | None) -> ReplyKeyboardMarkup:
 def build_admin_home() -> tuple[str, InlineKeyboardMarkup]:
     total = len(USERS)
     today = count_active_today()
-    src = read_active_source()
-    src_lbl = source_label(src)
     uptime = fmt_uptime(time.time() - BOT_START_TS)
 
     text = (
@@ -255,7 +240,7 @@ def build_admin_home() -> tuple[str, InlineKeyboardMarkup]:
         "📊 <b>الإحصائيات:</b>\n"
         f"├ 👥 المستخدمين: <b>{total}</b>\n"
         f"├ 🟢 نشطين اليوم: <b>{today}</b>\n"
-        f"├ 🟣 المصدر الفعّال: <b>{src_lbl}</b>\n"
+        f"├ 📺 المصادر: <b>{len(SOURCES)}</b> (بوابة Trab TV)\n"
         f"└ 🕒 وقت التشغيل: <b>{uptime}</b>\n\n"
         "⚡ اختر من القائمة أدناه:"
     )
@@ -272,7 +257,7 @@ def build_admin_home() -> tuple[str, InlineKeyboardMarkup]:
             InlineKeyboardButton(text="📊 الإحصائيات الكاملة",   callback_data="adm:stats"),
         ],
         [
-            InlineKeyboardButton(text="🔀 تبديل المصدر",           callback_data="adm:source"),
+            InlineKeyboardButton(text="📡 حالة المصادر",           callback_data="adm:source"),
             InlineKeyboardButton(text="📢 القنوات الإجبارية",      callback_data="adm:channels"),
         ],
         [
@@ -287,24 +272,24 @@ def build_admin_home() -> tuple[str, InlineKeyboardMarkup]:
 
 
 def build_source_panel() -> tuple[str, InlineKeyboardMarkup]:
-    active = read_active_source()
-    rows = []
-    for src in SOURCES:
-        sid = src["id"]
-        exists = source_config_exists(sid)
-        marker = "✅ " if sid == active else ("🔒 " if not exists else "🔘 ")
-        host = f" — {src['host']}" if src["host"] else "  (متاحة للإضافة)"
-        rows.append([InlineKeyboardButton(text=f"{marker}{src['label']}{host}", callback_data=f"adm:src:{sid}")])
-    rows.append([
-        InlineKeyboardButton(text="🔄 تحديث", callback_data="adm:source"),
-        InlineKeyboardButton(text="« رجوع",   callback_data="adm:home"),
-    ])
-    text = (
-        "🔀 <b>تبديل مصدر المحتوى</b>\n\n"
-        f"الفعّال حالياً: <b>{source_label(active)}</b>\n\n"
-        "اختر مصدراً للتبديل إليه:"
-    )
-    return text, InlineKeyboardMarkup(inline_keyboard=rows)
+    """Read-only view of the gateway sources. The portal (showcase.html) routes users
+    between them; the bot intentionally does NOT switch sources (that would overwrite
+    the live multi-source nginx config)."""
+    lines = [
+        "📡 <b>حالة المصادر</b>\n",
+        "كل المصادر تُعرض سوا في بوابة <b>Trab TV</b> والمستخدم يختار منها:\n",
+    ]
+    for i, src in enumerate(SOURCES, 1):
+        lines.append(
+            f"<b>{i}.</b> {src['label']}\n"
+            f"   <code>{src['host']}</code> · <code>{src['path']}</code>"
+        )
+    lines.append(f"\n🔗 البوابة: <code>{WEBAPP_URL}</code>")
+    rows = [
+        [InlineKeyboardButton(text="📺 فتح البوابة", web_app=WebAppInfo(url=webapp_url_with_source()))],
+        [InlineKeyboardButton(text="« رجوع", callback_data="adm:home")],
+    ]
+    return "\n".join(lines), InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def build_users_panel(page: int = 0, per_page: int = 10) -> tuple[str, InlineKeyboardMarkup]:
@@ -365,8 +350,7 @@ def build_stats_panel() -> tuple[str, InlineKeyboardMarkup]:
         marker = "اليوم" if i == 0 else d.isoformat()
         lines.append(f"<code>{marker:11}</code> {bar} {n}")
 
-    src = read_active_source()
-    lines.append(f"\n🟣 المصدر الفعّال: <b>{source_label(src)}</b>")
+    lines.append(f"\n📺 المصادر المتاحة: <b>{len(SOURCES)}</b> (بوابة Trab TV)")
     lines.append(f"🕒 وقت تشغيل البوت: <b>{fmt_uptime(time.time() - BOT_START_TS)}</b>")
 
     rows = [[InlineKeyboardButton(text="« رجوع", callback_data="adm:home")]]
@@ -450,8 +434,88 @@ def is_admin(uid: int | None) -> bool:
     return bool(uid and uid in ADMIN_IDS)
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# Forced-channel join gate
+# ──────────────────────────────────────────────────────────────────────────
+def _channel_url(ch: dict) -> str | None:
+    un = (ch.get("username") or "").lstrip("@")
+    if un:
+        return f"https://t.me/{un}"
+    return ch.get("invite_link") or None
+
+
+async def unjoined_channels(bot: Bot, user_id: int) -> list[dict]:
+    """Return the forced channels the user has NOT joined. Empty list = all good
+    (or enforcement disabled / no channels). A channel the bot itself can't query
+    (not an admin there) is skipped — logged, never used to hard-lock users out."""
+    settings = load_settings()
+    if not settings.get("force_join_enabled", False):
+        return []
+    missing: list[dict] = []
+    for ch in load_channels():
+        cid = ch.get("chat_id")
+        if cid is None:
+            continue
+        try:
+            member = await bot.get_chat_member(cid, user_id)
+            if member.status in ("left", "kicked"):
+                missing.append(ch)
+        except TelegramForbiddenError:
+            logging.warning("force-join: bot lacks access to %s; skipping", cid)
+        except TelegramBadRequest as e:
+            logging.warning("force-join check failed for %s: %s", cid, e)
+            missing.append(ch)
+        except Exception as e:
+            logging.warning("force-join unexpected error for %s: %s", cid, e)
+    return missing
+
+
+def build_join_gate(channels: list[dict]) -> tuple[str, InlineKeyboardMarkup]:
+    rows: list[list[InlineKeyboardButton]] = []
+    for ch in channels:
+        title = ch.get("title", "القناة")
+        url = _channel_url(ch)
+        if url:
+            rows.append([InlineKeyboardButton(text=f"📢 {title}", url=url)])
+        else:
+            rows.append([InlineKeyboardButton(text=f"📢 {title} (انضم يدوياً)", callback_data="join:noop")])
+    rows.append([InlineKeyboardButton(text="✅ اشتركت — تحقّق", callback_data="join:check")])
+    text = (
+        "🔒 <b>للمتابعة، اشترك أولاً</b>\n\n"
+        "لازم تشترك بالقنوات التالية حتى تقدر تفتح التطبيق.\n"
+        "بعد الاشتراك اضغط <b>✅ اشتركت — تحقّق</b>."
+    )
+    return text, InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+@dp.callback_query(F.data.startswith("join:"))
+async def on_join_check(query: CallbackQuery, bot: Bot) -> None:
+    action = (query.data or "").split(":", 1)[1] if ":" in (query.data or "") else ""
+    if action == "noop":
+        await query.answer("افتح القناة، اشترك، ثم ارجع واضغط تحقّق", show_alert=True)
+        return
+    uid = query.from_user.id
+    missing = await unjoined_channels(bot, uid)
+    if missing:
+        await query.answer("لسّا ما اشتركت بكل القنوات ❌", show_alert=True)
+        text, kb = build_join_gate(missing)
+        await _safe_edit(query, text, kb)
+        return
+    await query.answer("تم التحقق ✓")
+    if query.message:
+        try:
+            await query.message.edit_text("✅ تم التحقق! أهلاً بك.")
+        except Exception:
+            pass
+        await query.message.answer(build_welcome(), reply_markup=build_user_keyboard())
+        await query.message.answer(
+            "📌 زر <b>📺 فتح التطبيق</b> ثابت بالأسفل — اضغطه أي وقت.",
+            reply_markup=keyboard_for(uid),
+        )
+
+
 @dp.message(CommandStart())
-async def on_start(message: Message) -> None:
+async def on_start(message: Message, bot: Bot) -> None:
     uid = None
     if message.from_user:
         uid = message.from_user.id
@@ -460,6 +524,14 @@ async def on_start(message: Message) -> None:
             name=message.from_user.full_name or "",
             username=message.from_user.username or "",
         )
+    # Forced-channel gate — admins bypass. If enabled and user hasn't joined all
+    # required channels, show the join gate instead of the WebApp button.
+    if not is_admin(uid) and uid:
+        missing = await unjoined_channels(bot, uid)
+        if missing:
+            text, kb = build_join_gate(missing)
+            await message.answer(text, reply_markup=kb)
+            return
     # Send welcome with inline WebApp button
     await message.answer(build_welcome(), reply_markup=build_user_keyboard())
     # Then pin a persistent reply keyboard at the bottom of chat (always visible)
@@ -560,51 +632,6 @@ async def on_admin_cb(query: CallbackQuery) -> None:
         await _safe_edit(query, text, kb)
         return
 
-    if action == "src":
-        target = parts[2] if len(parts) > 2 else ""
-        active = read_active_source()
-        if target == active:
-            await query.answer(f"{source_label(target)} مفعّل أصلاً")
-        elif not source_config_exists(target):
-            await query.answer("هذه الخانة غير مهيّأة بعد", show_alert=True)
-        else:
-            proc = await asyncio.create_subprocess_exec(
-                SWITCH_SCRIPT, target,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            out, err = await proc.communicate()
-            if proc.returncode == 0:
-                await query.answer(f"تم التبديل إلى {source_label(target)} ✓", show_alert=True)
-                # Push a fresh persistent keyboard whose WebApp URL now has ?src=<new>
-                # so iOS Telegram's WebApp cache invalidates and reload shows the new source.
-                if query.message:
-                    try:
-                        from aiogram import Bot as _B
-                        bot = query.bot
-                        await bot.send_message(
-                            query.from_user.id,
-                            f"🔁 المصدر الجديد: <b>{source_label(target)}</b>\n"
-                            f"اقفل التطبيق المصغّر وافتحه من جديد ليظهر التحديث.",
-                            reply_markup=keyboard_for(query.from_user.id),
-                        )
-                        # Also update the chat menu button URL
-                        await bot.set_chat_menu_button(
-                            chat_id=query.from_user.id,
-                            menu_button=MenuButtonWebApp(
-                                text="📺 فتح التطبيق",
-                                web_app=WebAppInfo(url=webapp_url_with_source()),
-                            ),
-                        )
-                    except Exception as e:
-                        logging.warning("post-switch refresh failed: %s", e)
-            else:
-                msg = (err.decode("utf-8", "replace") or out.decode("utf-8", "replace"))[:180]
-                await query.answer(f"فشل: {msg}", show_alert=True)
-        text, kb = build_source_panel()
-        await _safe_edit(query, text, kb)
-        return
-
     if action == "channels":
         await query.answer()
         text, kb = build_channels_panel()
@@ -691,6 +718,7 @@ async def on_admin_input(message: Message, bot: Bot) -> None:
                 "chat_id": chat.id,
                 "title": chat.title or chat.username or str(chat.id),
                 "username": chat.username or "",
+                "invite_link": getattr(chat, "invite_link", "") or "",
             }
             if not any(str(c.get("chat_id")) == str(chat.id) for c in chans):
                 chans.append(entry)
