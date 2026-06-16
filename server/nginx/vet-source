@@ -1,0 +1,30 @@
+#!/bin/bash
+# vet-source <domain> — go/no-go check whether a site can be used as a Trab TV source.
+# A source WORKS only if it is (1) server-proxyable (no Cloudflare datacenter block)
+# AND (2) framable (no X-Frame-Options/CSP block), keeping streams same-origin.
+ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+D="${1:?usage: vet-source <domain>}"; D="${D#http*://}"; D="${D%%/*}"
+echo "================ $D ================"
+hdr=$(curl -s -m 15 -A "$ua" -L -D - -o /tmp/body.$$ "https://$D/")
+final=$(printf "%s" "$hdr" | grep -i "^location:" | tail -1 | tr -d "\r" | sed "s/location: //I")
+code=$(printf "%s" "$hdr" | grep -iE "^HTTP/" | tail -1 | tr -d "\r")
+server=$(printf "%s" "$hdr" | grep -iE "^server:" | tail -1 | tr -d "\r")
+xfo=$(printf "%s" "$hdr" | grep -iE "^x-frame-options:" | tail -1 | tr -d "\r")
+csp=$(printf "%s" "$hdr" | grep -iE "^content-security-policy:.*frame-ancestors" | tail -1 | tr -d "\r")
+cfblock=$(printf "%s" "$hdr" | grep -iqE "cf-mitigated|challenge|__cf_chl|cf-ray" && echo yes || echo no)
+echo "final status : ${code:-?}"
+[ -n "$final" ] && echo "redirects to : $final"
+echo "server       : ${server:-?}"
+echo "X-Frame-Opts : ${xfo:-<none>}"
+echo "CSP frame-anc: ${csp:-<none>}"
+# Verdicts
+proxyable=YES; framable=YES; why=""
+echo "$code" | grep -qE " 403| 503| 429" && { proxyable="NO"; why="$why datacenter-blocked($code);"; }
+[ "$cfblock" = "yes" ] && echo "$code" | grep -qE " 403| 503" && { proxyable="NO"; why="$why cloudflare-challenge;"; }
+[ -n "$xfo" ] && framable="NO"
+[ -n "$csp" ] && framable="NO"
+echo "----------------------------------------"
+echo "PROXYABLE (server-side) : $proxyable"
+echo "FRAMABLE  (iframe)      : $framable"
+if [ "$proxyable" = "YES" ] || [ "$framable" = "YES" ]; then echo "VERDICT: ✅ USABLE${why:+  (notes:$why)}"; else echo "VERDICT: ❌ NOT USABLE -$why"; fi
+rm -f /tmp/body.$$
