@@ -595,7 +595,7 @@ async def _safe_edit(query: CallbackQuery, text: str, kb: InlineKeyboardMarkup) 
 
 
 @dp.callback_query(F.data.startswith("adm:"))
-async def on_admin_cb(query: CallbackQuery) -> None:
+async def on_admin_cb(query: CallbackQuery, bot: Bot) -> None:
     if not is_admin(query.from_user.id if query.from_user else None):
         await query.answer("غير مصرّح لك", show_alert=True)
         return
@@ -684,9 +684,33 @@ async def on_admin_cb(query: CallbackQuery) -> None:
         await _safe_edit(query, text, kb)
         return
 
-    if action == "bcast_send":
-        # confirmed broadcast — text was passed as raw message earlier
-        await query.answer("جارٍ البث...")
+    if action == "bcast_go":
+        # confirmed broadcast — parts[2] is the admin's source message_id to copy
+        msg_id = parts[2] if len(parts) > 2 else ""
+        if not msg_id.isdigit():
+            await query.answer("معرّف رسالة غير صالح", show_alert=True)
+            return
+        await query.answer("بدأ البث…")
+        sent, failed = 0, 0
+        for target in list(USERS.keys()):
+            try:
+                await bot.copy_message(
+                    chat_id=int(target),
+                    from_chat_id=query.from_user.id,
+                    message_id=int(msg_id),
+                )
+                sent += 1
+            except (TelegramBadRequest, TelegramForbiddenError):
+                failed += 1
+            except Exception:
+                failed += 1
+            await asyncio.sleep(0.05)  # gentle rate limit
+        if query.message:
+            await query.message.answer(
+                f"📊 <b>نتائج البث</b>\nتم: <b>{sent}</b> · فشل: <b>{failed}</b>"
+            )
+        text, kb = build_admin_home()
+        await _safe_edit(query, text, kb)
         return
 
     await query.answer()
@@ -748,39 +772,6 @@ async def on_admin_input(message: Message, bot: Bot) -> None:
 
     # Otherwise: ignore admin's free-form text (they should use /admin)
     return
-
-
-@dp.callback_query(F.data.startswith("adm:bcast_go:"))
-async def on_broadcast_go(query: CallbackQuery, bot: Bot) -> None:
-    if not is_admin(query.from_user.id if query.from_user else None):
-        await query.answer("غير مصرّح", show_alert=True)
-        return
-    parts = (query.data or "").split(":")
-    if len(parts) < 3 or not parts[2].isdigit():
-        await query.answer("معرّف رسالة غير صالح", show_alert=True)
-        return
-    src_message_id = int(parts[2])
-    await query.answer("بدأ البث…")
-    sent, failed = 0, 0
-    for uid in list(USERS.keys()):
-        try:
-            await bot.copy_message(
-                chat_id=int(uid),
-                from_chat_id=query.from_user.id,
-                message_id=src_message_id,
-            )
-            sent += 1
-        except (TelegramBadRequest, TelegramForbiddenError):
-            failed += 1
-        except Exception:
-            failed += 1
-        await asyncio.sleep(0.05)  # gentle rate limit
-    if query.message:
-        await query.message.answer(
-            f"📊 <b>نتائج البث</b>\nتم: <b>{sent}</b> · فشل: <b>{failed}</b>"
-        )
-    text, kb = build_admin_home()
-    await _safe_edit(query, text, kb)
 
 
 # ──────────────────────────────────────────────────────────────────────────
