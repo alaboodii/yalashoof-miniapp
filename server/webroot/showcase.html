@@ -960,30 +960,5 @@
 
 </div>
 
-<script>
-  /* Open each source in Telegram's in-app browser (Safari View / Chrome Custom Tab)
-     instead of navigating inside the Mini App container — the container freezes on
-     heavy streaming pages and Telegram suspends video after ~10s. The in-app browser
-     is a full WebView that plays HLS (incl. Android) without freezing. Outside
-     Telegram (plain browser) the normal <a> navigation is left untouched. */
-  (function () {
-    var tg = window.Telegram && window.Telegram.WebApp;
-    // Only hijack clicks inside REAL Telegram. Outside Telegram, telegram-web-app.js
-    // still exposes openLink() but it's a no-op there — intercepting would kill the
-    // plain <a> navigation and make the portal look broken in a normal phone browser.
-    var inTelegram = tg && tg.platform && tg.platform !== 'unknown';
-    if (!inTelegram || typeof tg.openLink !== 'function') return;
-    var cards = document.querySelectorAll('a.src-card');
-    for (var i = 0; i < cards.length; i++) {
-      cards[i].addEventListener('click', function (e) {
-        var href = this.getAttribute('href');
-        if (!href) return;
-        var url = href.indexOf('http') === 0 ? href : (location.origin + href);
-        e.preventDefault();
-        try { tg.openLink(url); } catch (_) { window.location.href = url; }
-      }, false);
-    }
-  })();
-</script>
 </body>
 </html>
