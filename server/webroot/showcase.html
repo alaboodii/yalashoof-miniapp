@@ -167,6 +167,31 @@
       calc(16px + var(--tg-safe-left, 0px));
   }
 
+  /* ===== Entrance motion (staggered fade + rise on load) =====
+     Elements are visible by default; only inside this query do we hide-then-animate,
+     so users who prefer reduced motion (or any no-animation fallback) still see them. */
+  @keyframes ui-rise {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-tag, .hero-logo-frame, .hero h1, .hero p,
+    .stats, .section-head, .src-card {
+      opacity: 0;
+      animation: ui-rise 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .hero-tag         { animation-delay: 0.04s; }
+    .hero-logo-frame  { animation-delay: 0.10s; }
+    .hero h1          { animation-delay: 0.18s; }
+    .hero p           { animation-delay: 0.26s; }
+    .stats            { animation-delay: 0.34s; }
+    .section-head     { animation-delay: 0.44s; }
+    .src-card:nth-child(1) { animation-delay: 0.54s; }
+    .src-card:nth-child(2) { animation-delay: 0.62s; }
+    .src-card:nth-child(3) { animation-delay: 0.70s; }
+    .src-card:nth-child(4) { animation-delay: 0.78s; }
+  }
+
   /* ===== Icon system ===== */
   .ico {
     width: 1em; height: 1em;
@@ -182,6 +207,7 @@
   /* ===== Logo (HTML+CSS wordmark) ===== */
   .brand-mark {
     display: inline-flex; align-items: center;
+    direction: ltr; /* Latin wordmark must read "Trab ⊙ TV" even inside the RTL page */
     gap: 0.32em;
     font-family: 'Audiowide', 'Arial Black', sans-serif;
     font-weight: 400;
@@ -674,10 +700,18 @@
     font-family: 'Readex Pro', 'Tajawal', sans-serif;
     font-size: 12px; font-weight: 600;
     color: var(--text-1);
-    transition: all 0.2s;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    transition: all 0.22s var(--ease-out);
   }
   .card-cta .ico { font-size: 13px; transition: transform 0.25s var(--ease-out); }
-  .src-card:hover .card-cta, .src-card:active .card-cta { color: var(--mint); }
+  .src-card:hover .card-cta, .src-card:active .card-cta {
+    color: var(--mint);
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.20);
+  }
   .src-card:hover .card-cta .ico, .src-card:active .card-cta .ico { transform: translateX(-4px); }
 
   .card-status {
